@@ -1,87 +1,97 @@
-#include <iostream>
-#include <SDL.h>
 
-using namespace std;
+#include"commonfunction.h"
+#include"BaseObject.h"
+BaseObject g_background;
+bool InitData()
+{
+    bool success = true;
+    // bien tra ve
+    int ret = SDL_Init(SDL_INIT_VIDEO);
+    // thiet lap moi truong ban dau cho sdl
+    if (ret < 0)
+    // ham chay co loi hay init ko thanh cong
+        return false;
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+    //thiet lap che do ti le va chat luong
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
-const string WINDOW_TITLE = "An Implementation of Code.org Painter";
+    g_window = SDL_CreateWindow("Gamecpp SLD2.0",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
+                                SCREEN_WIDTH, SCREEN_HEIGHT,SDL_WINDOW_SHOWN);
+    // tao cua so window
+    if(g_window=NULL)
+    {
+        return false;
+    }
+    else
+    {
+        g_screen = SDL_CreateRenderer(g_window,-1,SDL_RENDERER_ACCELERATED);
+        // g_window tra bien render cho screen
+        if (g_screen = NULL)
+        {
+            return false;
+        }
+        else
+        {
+            SDL_SetRenderDrawColor(g_screen, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR);
+            int imgFlags = IMG_INIT_PNG;
+            if (!(IMG_Init(imgFlags)&&imgFlags))
+            {
+                success = false;
+            }
+        }
+    }
+    return success;
+}
 
-void initSDL(SDL_Window* &window, SDL_Renderer* &renderer);
+bool loadBackGround()
+{
+    bool ret = g_background.LoadImage("image\\background1.png",g_screen);
+    if (ret == false)
+        return false;
 
+    return true;
+}
 
-void logSDLError(std::ostream& os,
-                 const std::string &msg, bool fatal = false);
+void close()
+{
+    g_background.Free();
 
-void quitSDL(SDL_Window* window, SDL_Renderer* renderer);
+    SDL_DestroyRenderer(g_screen);
+    g_screen = NULL;
 
-void waitUntilKeyPressed();
+    SDL_DestroyWindow(g_window);
+    g_window = NULL;
 
+    IMG_Quit();
+    SDL_Quit();
+
+}
 int main(int argc, char* argv[])
 {
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    initSDL(window, renderer);
+    if (InitData() == false )
+    {return -1;}
+    if (loadBackGround()==false)
+    {return -1;}
 
-    // Your drawing code here
-    // use SDL_RenderPresent(renderer) to show it
+    bool is_quit = false;
+    while (!is_quit)
+    {
+        while(SDL_PollEvent(&g_event) != 0)
+        {
+            if (g_event.type == SDL_QUIT)
+            {
+                is_quit = true;
 
-    waitUntilKeyPressed();
-    quitSDL(window, renderer);
+            }
+        }
+
+        SDL_SetRenderDrawColor(g_screen, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR);
+        // cho ca screen bang mau do roi xoa di
+        SDL_RenderClear(g_screen);
+        // truoc khi load anh thi phai set lai mau cho man hinh roi xoa di de lam moi
+
+        g_background.Render(g_screen, NULL);
+        SDL_RenderPresent(g_screen);
+    }
+    close();
     return 0;
 }
-
-void logSDLError(std::ostream& os,
-                 const std::string &msg, bool fatal)
-{
-    os << msg << " Error: " << SDL_GetError() << std::endl;
-    if (fatal) {
-        SDL_Quit();
-        exit(1);
-    }
-}
-
-void initSDL(SDL_Window* &window, SDL_Renderer* &renderer)
-{
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-        logSDLError(std::cout, "SDL_Init", true);
-
-    window = SDL_CreateWindow(WINDOW_TITLE.c_str(), SDL_WINDOWPOS_CENTERED,
-       SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    //window = SDL_CreateWindow(WINDOW_TITLE.c_str(), SDL_WINDOWPOS_CENTERED,
-       //SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_FULLSCREEN_DESKTOP);
-    if (window == nullptr) logSDLError(std::cout, "CreateWindow", true);
-
-
-    //Khi chạy trong môi trường bình thường (không chạy trong máy ảo)
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED |
-                                              SDL_RENDERER_PRESENTVSYNC);
-    //Khi chạy ở máy ảo (ví dụ tại máy tính trong phòng thực hành ở trường)
-    //renderer = SDL_CreateSoftwareRenderer(SDL_GetWindowSurface(window));
-
-    if (renderer == nullptr) logSDLError(std::cout, "CreateRenderer", true);
-
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
-}
-
-void quitSDL(SDL_Window* window, SDL_Renderer* renderer)
-{
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
-}
-
-void waitUntilKeyPressed()
-{
-    SDL_Event e;
-    while (true) {
-        if ( SDL_WaitEvent(&e) != 0 &&
-             (e.type == SDL_KEYDOWN || e.type == SDL_QUIT) )
-            return;
-        SDL_Delay(100);
-    }
-}
-
-
-
